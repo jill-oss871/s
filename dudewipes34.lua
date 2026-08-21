@@ -1,19 +1,19 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.1
+version = 1.25
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
     SubTitle = game.Players.LocalPlayer.Name,
-    Size = Vector2.new(580, 460),
+    Size = Vector2.new(660, 740),
     Resize = true,
 })
 
 local Car = Window:AddTab({ Title = "Car Options", Icon = "car" })
 local World = Window:AddTab({ Title = "World Options", Icon = "globe" })
-local Job = Window:AddTab({ Title = "Auto Options", Icon = "cog" })
-local Settings = Window:AddTab({ Title = "Settings", Icon = "house" })
+local Job = Window:AddTab({ Title = "Auto Options", Icon = "briefcase" })
+local Settings = Window:AddTab({ Title = "Settings", Icon = "cog" })
 
 local UserInputService = game:GetService("UserInputService")
 local DebrisService = game:GetService("Debris")
@@ -41,6 +41,7 @@ local carTPs = {
     Supermarket = CFrame.new(3934.38, 0.87, 1158.90),
     Sautoshop = CFrame.new(-396.72, 0.87, 6.37),
     Nautoshop = CFrame.new(2804.74, 0.86, -409.17),
+    BoatAutoShop = CFrame.new(4101.34, -29.73, 2868.62),
     NorthDock = CFrame.new(4515.74, -26.86, -266.19),
     BlackMarket = CFrame.new(1112.16, -26.81, 1036.99),
     Race = CFrame.new(-854.14, 0.77, 2343.31),
@@ -171,7 +172,22 @@ end)
 -- Vehicle options
 
 Car:AddButton({
-    Title = "Rad Up",
+    Title = "Terminate Car Velocity",
+    Callback = function()
+        local c = findCar()
+        c.PrimaryPart.Velocity = Vector3.new(0,0,0)
+    end,
+})
+
+Car:AddButton({
+    Title = "Set Clipboard to Car Position",
+    Callback = function()
+       setclipboard(c.PrimaryPart.Position)
+    end,
+})
+
+Car:AddButton({
+    Title = "Rad Up45",
     Callback = function()
         local c = findCar()
 
@@ -179,7 +195,7 @@ if c and c.PrimaryPart then
     local pos = c.PrimaryPart.Position
     c.PrimaryPart.CFrame =
     CFrame.new(pos.X, pos.Y, pos.Z) *
-   	CFrame.Angles(math.rad(90), 0, 0)
+   	CFrame.Angles(math.rad(45), 0, 0)
 end
     end,
 })
@@ -193,7 +209,7 @@ if c and c.PrimaryPart then
     local pos = c.PrimaryPart.Position
     c.PrimaryPart.CFrame =
     CFrame.new(pos.X, pos.Y, pos.Z) *
-   	CFrame.Angles(math.rad(-90), 0, 0)
+   	CFrame.Angles(math.rad(-45), 0, 0)
 end
     end,
 })
@@ -215,7 +231,7 @@ end
 local CarTeleport = Car:AddDropdown({
     Id = "cartp",
     Title = "Car Teleport",
-    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential", "OnTopOfArcade"},
+    Values = {"Arcade", "Bank", "BlackMarket", "BoatAutoShop", "Cgas", "Dealership", "Delivery", "Farm", "Fish", "Fire", "GunStore", "Hospital", "Nautoshop", "NorthDock", "Nresidential", "NWgas", "OnTopOfArcade", "PawnShop", "Police", "Prison", "Race", "RoadService", "Sautoshop", "SEgas", "Sgas", "Supermarket", "SWgas", "Sresidential", "Transit"},
     Default = "Dealership",
     Callback = function(value)
     local car = findCar()
@@ -268,7 +284,7 @@ local CarBoost3 = Car:AddKeybind({
     local c = findCar()
     if c and c.Config.On.Value == true then
         c.PrimaryPart.Velocity =
-        c.PrimaryPart.Velocity + Vector3.new(0,-1,0) * -boostspeed
+        c.PrimaryPart.Velocity + Vector3.new(0,3,0) * boostspeed
     end
 end
 })
@@ -300,15 +316,6 @@ local CarSpeedSlider = Car:AddSlider({
     Rounding = 0,
     Callback = function(value, oldValue)
     carspeed = value
-end})
-
-local PlrTeleport = World:AddDropdown({
-    Id = "plrtp",
-    Title = "Player Teleport",
-    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential", "OnTopOfArcade"},
-    Default = "Dealership",
-    Callback = function(value)
-    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
 end})
 
 local PanicTP = World:AddKeybind({
@@ -370,6 +377,14 @@ local FishFarm = Job:AddToggle({
 Callback = function(value)
     
 end})
+
+
+
+
+
+Window:BuildInterfaceSection(Settings)
+Window:BuildConfigSection(Settings)
+Library:LoadAutoloadConfig()
 
 Settings:AddButton({
 	Title = "Unload",

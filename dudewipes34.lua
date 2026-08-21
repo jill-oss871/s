@@ -50,27 +50,14 @@ local carTPs = {
     Cgas = CFrame.new(2252.09, 0.85, 96.93),
     SWgas = CFrame.new(1152.28, 0.84, -844.14),
     Sresidential = CFrame.new(-466.75, 1.04, 1319.56),
-    Nresidential = CFrame.new(3688.47, 98.77, 1909.96)
+    Nresidential = CFrame.new(3688.47, 98.77, 1909.96),
+    OnTopOfArcade = CFrame.new(2991.03, 79.31, 1726.07)
 }
 
 -- Functions >~<
 
 local car = nil
 isDriving = false
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-
-    if input.KeyCode == Enum.KeyCode.W and car and car.Config.On.Value == true then
-        isDriving = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.W then
-        isDriving = false
-    end
-end)
 
 function findCar()
     for i,v in pairs(game.Workspace.Gameplay.Vehicles:GetChildren()) do
@@ -80,6 +67,10 @@ function findCar()
             continue
         end
     end
+end
+
+local function isWDown()
+    return UserInputService:IsKeyDown(119)
 end
 
 function carTP(Location,car)
@@ -164,26 +155,67 @@ Library:Notify({
         end
 end
 
-RunService.RenderStepped:Connect(function(dt)
-    if carspeedEnabled then
-        local car = findCar()
-        if car and car.Config.On.Value == true and isDriving then
-            car.PrimaryPart.Velocity = car.PrimaryPart.CFrame.LookVector * carspeed
+RunService.RenderStepped:Connect(function()
+    if not carspeedEnabled then
+        return
+    end
 
-            else
+    local c = findCar()
 
-        end
-
-
+    if c and c.Config.On.Value == true and c.PrimaryPart and isWDown() then
+c.PrimaryPart.AssemblyLinearVelocity =
+    c.PrimaryPart.CFrame.LookVector * carspeed
     end
 end)
 
 -- Vehicle options
 
+Car:AddButton({
+    Title = "Rad Up",
+    Callback = function()
+        local c = findCar()
+
+if c and c.PrimaryPart then
+    local pos = c.PrimaryPart.Position
+    c.PrimaryPart.CFrame =
+    CFrame.new(pos.X, pos.Y, pos.Z) *
+   	CFrame.Angles(math.rad(90), 0, 0)
+end
+    end,
+})
+
+Car:AddButton({
+    Title = "Rad Down",
+    Callback = function()
+        local c = findCar()
+
+if c and c.PrimaryPart then
+    local pos = c.PrimaryPart.Position
+    c.PrimaryPart.CFrame =
+    CFrame.new(pos.X, pos.Y, pos.Z) *
+   	CFrame.Angles(math.rad(-90), 0, 0)
+end
+    end,
+})
+
+Car:AddButton({
+    Title = "Rad Upside Down",
+    Callback = function()
+        local c = findCar()
+
+if c and c.PrimaryPart then
+    local pos = c.PrimaryPart.Position
+    c.PrimaryPart.CFrame =
+    CFrame.new(pos.X, pos.Y, pos.Z) *
+   	CFrame.Angles(math.rad(180), 0, 0)
+end
+    end,
+})
+
 local CarTeleport = Car:AddDropdown({
     Id = "cartp",
     Title = "Car Teleport",
-    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential"},
+    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential", "OnTopOfArcade"},
     Default = "Dealership",
     Callback = function(value)
     local car = findCar()
@@ -273,7 +305,7 @@ end})
 local PlrTeleport = World:AddDropdown({
     Id = "plrtp",
     Title = "Player Teleport",
-    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential"},
+    Values = {"Dealership", "Transit", "Delivery", "RoadService", "Farm", "Arcade", "Prison", "Fish", "GunStore", "Bank", "Police", "Fire", "Hospital", "PawnShop", "Supermarket", "Sautoshop", "Nautoshop", "NorthDock", "BlackMarket", "Race", "NWgas", "Sgas", "SEgas", "Cgas", "SWgas", "Sresidential", "Nresidential", "OnTopOfArcade"},
     Default = "Dealership",
     Callback = function(value)
     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]

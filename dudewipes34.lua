@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.3
+version = 1.25
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -171,14 +171,6 @@ end)
 
 -- Vehicle options
 
-Car:AddButton({
-    Title = "Terminate Car Velocity",
-    Callback = function()
-        local c = findCar()
-        c.PrimaryPart.Velocity = Vector3.new(0,0,0)
-    end,
-})
-
 local noVelocity = Car:AddKeybind({
     Id = "novelocity",
     Title = "Terminate Car Velocity",
@@ -188,8 +180,7 @@ local noVelocity = Car:AddKeybind({
     local c = findCar()
 
     if c and c.Config.On.Value == true then
-        c.PrimaryPart.Velocity =
-        c.PrimaryPart.Velocity + c.PrimaryPart.CFrame.LookVector * boostspeed
+        c.PrimaryPart.Velocity = Vector3.new(0,0,0)
     end
 end
 })
@@ -216,7 +207,7 @@ end
 })
 
 Car:AddButton({
-    Title = "Rad Down",
+    Title = "Rad Down45",
     Callback = function()
         local c = findCar()
 

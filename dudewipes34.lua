@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.3
+version = 1.35
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -9,6 +9,7 @@ local Window = Library:CreateWindow({
     Size = Vector2.new(660, 740),
     Resize = true,
 })
+
 
 local Changelogs = Window:AddTab({ Title = "Changelogs", Icon = "clipboard" })
 local Car = Window:AddTab({ Title = "Car Options", Icon = "car" })
@@ -31,6 +32,7 @@ taxicooldown = 8
 started = false
 terminate = false
 taxifarm = false
+fishfarm = false
 
 local carTPs = {
     Dealership = CFrame.new(3771.96, 0.82, -392.02),
@@ -66,7 +68,7 @@ local carTPs = {
 
 local changelogsmain = Changelogs:AddParagraph({
     Title = "Version 1.3 Changelogs!",
-    Content = "~ Vehicle upwards launch button to escape the apparition's extra gravity when low to the ground ~\n~ Taxi Auto Farm with customizable teleport delay depending on lag and how safe you want to be ~\n~ Different default settings that are in theory better ~",
+    Content = "~ Vehicle upwards launch button to escape the apparition's extra gravity when low to the ground ~\n~ Taxi Auto Farm with customizable teleport delay depending on lag and how safe you want to be ~\n~ Fish Auto Farm. Keep rod equipped and in slot 1, food in second slot. VERY BUGGY but should be totally automatic ~\n~ Different default settings that are in theory better ~",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -178,6 +180,284 @@ function taxiautoo()
     car.PrimaryPart.Velocity = Vector3.new(0, 0, 0)
 end
 
+function activearea()
+    if terminate or not fishfarm then
+        return nil
+    end
+
+    local areas = ReplicatedStorage.Gameplay.FishingAreas
+
+    if not areas then
+        return nil
+    end
+
+    for _, v in ipairs(areas:GetChildren()) do
+        if v.Name == "ActiveArea" then
+            return v.Position
+        end
+    end
+
+    return nil
+end
+
+function eatIfNeeded()
+    if terminate or not fishfarm then
+        return false
+    end
+
+    local hunger = plr.PlayerGui.ScreenGui.Left.Bottom.Food.CircularProgressBar.Progress.Value
+
+    if hunger <= 0.05 then
+        keypress(0x32)
+        task.wait(0.1)
+        keyrelease(0x32)
+        task.wait(0.1)
+
+        if terminate or not fishfarm then
+            return false
+        end
+
+        mouse1click()
+        task.wait(5)
+
+        if terminate or not fishfarm then
+            return false
+        end
+
+        keypress(0x31)
+        task.wait(0.1)
+        keyrelease(0x31)
+        task.wait(0.5)
+    end
+
+    return not terminate and fishfarm
+end
+
+function moveToArea()
+    if terminate or not fishfarm then
+        return false
+    end
+
+    local area = activearea()
+
+    if not area then
+        return false
+    end
+
+    local character = plr.Character
+
+    if not character then
+        return false
+    end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return false
+    end
+
+    local dx = math.abs(area.X - root.Position.X)
+    local dz = math.abs(area.Z - root.Position.Z)
+
+    if dx < 68 and dz < 68 then
+        return true
+    end
+
+    root.CFrame = CFrame.new(area.X, area.Y, area.Z)
+
+    task.wait(1)
+
+    return not terminate and fishfarm
+end
+
+function cast()
+    if terminate or not fishfarm then
+        return false
+    end
+
+    if not eatIfNeeded() then
+        return false
+    end
+
+    if not moveToArea() then
+        return false
+    end
+
+    task.wait(1)
+
+    if terminate or not fishfarm then
+        return false
+    end
+
+    mouse1click()
+
+    return true
+end
+
+function catchFish()
+    if terminate or not fishfarm then
+        return false
+    end
+
+    keypress(0x20)
+    task.wait(0.05)
+    keyrelease(0x20)
+
+    return true
+end
+
+function getCatchNotification()
+    local playerGui = plr:FindFirstChild("PlayerGui")
+
+    if not playerGui then
+        return nil
+    end
+
+    local frontGui = playerGui:FindFirstChild("FrontGui")
+
+    if not frontGui then
+        return nil
+    end
+
+    local left = frontGui:FindFirstChild("Left")
+
+    if not left then
+        return nil
+    end
+
+    local bottom = left:FindFirstChild("Bottom")
+
+    if not bottom then
+        return nil
+    end
+
+    local notifications = bottom:FindFirstChild("Notifications")
+
+    if not notifications then
+        return nil
+    end
+
+    local notification = notifications:FindFirstChild("Notification")
+
+    if not notification then
+        return nil
+    end
+
+    return notification:FindFirstChild("TextLabel")
+end
+
+function waitForMinigame()
+    local timeout = os.clock() + 12
+
+    while fishfarm and not terminate and os.clock() < timeout do
+        task.wait(0.03)
+
+        local pointer = fishUI:FindFirstChild("Pointer")
+
+        if pointer then
+            local x = pointer.AbsolutePosition.X
+
+            if x > 0 then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function playFishingMinigame()
+    local timeout = os.clock() + 25
+    local wasInside = false
+    local catchPressed = false
+
+    while fishfarm and not terminate and os.clock() < timeout do
+        task.wait(0.015)
+
+        local notification = getCatchNotification()
+
+        if notification then
+            local text = notification.Text
+
+            if typeof(text) == "string" and string.find(string.lower(text), "you caught", 1, true) then
+                return true
+            end
+        end
+
+        local pointer = fishUI:FindFirstChild("Pointer")
+
+        if not pointer then
+            task.wait(0.05)
+            continue
+        end
+
+        local pointerX = pointer.AbsolutePosition.X
+        local inside = pointerX > 950 and pointerX < 970
+
+        if inside and not wasInside and not catchPressed then
+            keypress(0x20)
+            task.wait(0.05)
+            keyrelease(0x20)
+
+            catchPressed = true
+        end
+
+        if not inside then
+            wasInside = false
+            catchPressed = false
+        else
+            wasInside = true
+        end
+    end
+
+    return false
+end
+
+local fishThread = nil
+local fishRunning = false
+
+function startFishFarm()
+    if fishRunning then
+        return
+    end
+
+    fishRunning = true
+
+    fishThread = task.spawn(function()
+        task.wait(1)
+
+        while fishfarm and not terminate do
+            if not cast() then
+                break
+            end
+
+            if not waitForMinigame() then
+                task.wait(1)
+                continue
+            end
+
+            local caught = playFishingMinigame()
+
+            if not fishfarm or terminate then
+                break
+            end
+
+            if caught then
+                task.wait(1.5)
+            else
+                task.wait(1)
+            end
+
+            if not fishfarm or terminate then
+                break
+            end
+        end
+
+        fishThread = nil
+        fishRunning = false
+    end)
+end
+
 function finishPizza(car)
     if car and car.Name == "Vespa N 50" and game.Workspace.Gameplay.Entities.ClientContent:FindFirstChildOfClass("Part") then
         car.PrimaryPart.CFrame = game.Workspace.Gameplay.Entities.ClientContent:FindFirstChildOfClass("Part").CFrame
@@ -203,15 +483,19 @@ end
 RunService.RenderStepped:Connect(function()
     if carspeedEnabled then
         local c = findCar()
+
         if c and c.Config.On.Value == true and c.PrimaryPart and isWDown() then
             c.PrimaryPart.AssemblyLinearVelocity =
-            c.PrimaryPart.CFrame.LookVector * carspeed
+                c.PrimaryPart.CFrame.LookVector * carspeed
         end
 
     elseif taxifarm then
         local c = findCar()
-        c.PrimaryPart.Velocity = Vector3.new(0,0,0)
-        
+
+        if c and c.PrimaryPart then
+            c.PrimaryPart.Velocity = Vector3.new(0, 0, 0)
+        end
+
         taxiautoo()
     end
 end)
@@ -282,8 +566,8 @@ if c and c.PrimaryPart then
     local pos = c.PrimaryPart.Position
     c.PrimaryPart.CFrame =
     CFrame.new(pos.X, pos.Y, pos.Z) *
-    CFrame.Angles(math.rad(45), 0, 0)
-   	--CFrame.Angles(math.rad(45), pos.Y, pos.Z)
+    --CFrame.Angles(math.rad(45), 0, 0)
+   	CFrame.Angles(math.rad(45), pos.Y, pos.Z)
 end
     end,
 })
@@ -326,7 +610,7 @@ local CarTeleport = Car:AddDropdown({
     task.wait()
     if car and car.Config.On.Value == true and started == true then
         carTP(value,car)
-    elseif car.Config.On.Value == false and started == true then
+    elseif not car and started == true then
         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
     else
 
@@ -428,8 +712,6 @@ local PanicTP = World:AddKeybind({
 end
 })
 
--- Job options
-
 local p = Job:AddParagraph({ Title = "⚠️~ All of this is under development and experimental ~⚠️", Content = "Don't use what isn't confirmed to be working", TitleAlignment = "Left", ContentAlignment = "Left" })
 local p = Job:AddParagraph({ Title = "Terminate any active auto farms.", Content = "Do not spam!\nWait >10 seconds to start another farm.", TitleAlignment = "Left", ContentAlignment = "Left" })
 Job:AddButton({
@@ -468,15 +750,29 @@ Callback = function(value)
     taxifarm = value
 end})
 
-local taxifarmslider = Car:AddSlider({
+local taxifarmslider = Job:AddSlider({
     Id = "taxifarmslider",
     Title = "Taxi Auto Farm Teleport CD",
-    Min = 6, Max = 20,
-    Default = 8,
+    Min = 6, Max = 60,
+    Default = 20,
     Rounding = 0,
     Callback = function(value, oldValue)
     taxicooldown = value
 end})
+
+local fishfarmtoggle = Job:AddToggle({
+    Id = "fishfarmtoggle",
+    Title = "Fish Auto Farm",
+    Default = false,
+    Keybind = "F1",
+    Callback = function(value)
+        fishfarm = value
+
+        if fishfarm then
+            startFishFarm()
+        end
+    end
+})
 
 Settings:AddButton({
 	Title = "Unload",

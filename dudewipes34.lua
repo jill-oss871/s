@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.25
+version = 1.3
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -10,18 +10,27 @@ local Window = Library:CreateWindow({
     Resize = true,
 })
 
+local Changelogs = Window:AddTab({ Title = "Changelogs", Icon = "clipboard" })
 local Car = Window:AddTab({ Title = "Car Options", Icon = "car" })
 local World = Window:AddTab({ Title = "World Options", Icon = "globe" })
 local Job = Window:AddTab({ Title = "Auto Options", Icon = "briefcase" })
 local Settings = Window:AddTab({ Title = "Settings", Icon = "cog" })
 
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local DebrisService = game:GetService("Debris")
 local RunService = game:GetService("RunService")
+local fishUI = plr.PlayerGui.ScreenGui.Center.Bottom.Minigame1
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local carspeedEnabled = false
 local carspeed = 20
 local boostspeed = 20
+launchvelocity = 100
+taxicooldown = 8
+started = false
 terminate = false
+taxifarm = false
 
 local carTPs = {
     Dealership = CFrame.new(3771.96, 0.82, -392.02),
@@ -54,6 +63,13 @@ local carTPs = {
     Nresidential = CFrame.new(3688.47, 98.77, 1909.96),
     OnTopOfArcade = CFrame.new(2991.03, 79.31, 1726.07)
 }
+
+local changelogsmain = Changelogs:AddParagraph({
+    Title = "Version 1.3 Changelogs!",
+    Content = "~ Vehicle upwards launch button to escape the apparition's extra gravity when low to the ground ~\n~ Taxi Auto Farm with customizable teleport delay depending on lag and how safe you want to be ~\n~ Different default settings that are in theory better ~",
+    TitleAlignment = "Left",
+    ContentAlignment = "Left"
+})
 
 -- Functions >~<
 
@@ -134,6 +150,34 @@ Library:Notify({
     end
 end
 
+local taxilast = 0
+
+function taxiautoo()
+    if not taxifarm or terminate then
+        return
+    end
+
+    if os.clock() - taxilast < taxicooldown then
+        return
+    end
+
+    local car = findCar()
+    local destination = game.Workspace.Gameplay.Entities.ClientContent:FindFirstChildOfClass("Part")
+
+    if not car or not car.PrimaryPart then
+        return
+    end
+
+    if not car.Config.On.Value or not destination then
+        return
+    end
+
+    taxilast = os.clock()
+
+    car.PrimaryPart.CFrame = destination.CFrame
+    car.PrimaryPart.Velocity = Vector3.new(0, 0, 0)
+end
+
 function finishPizza(car)
     if car and car.Name == "Vespa N 50" and game.Workspace.Gameplay.Entities.ClientContent:FindFirstChildOfClass("Part") then
         car.PrimaryPart.CFrame = game.Workspace.Gameplay.Entities.ClientContent:FindFirstChildOfClass("Part").CFrame
@@ -157,15 +201,18 @@ Library:Notify({
 end
 
 RunService.RenderStepped:Connect(function()
-    if not carspeedEnabled then
-        return
-    end
+    if carspeedEnabled then
+        local c = findCar()
+        if c and c.Config.On.Value == true and c.PrimaryPart and isWDown() then
+            c.PrimaryPart.AssemblyLinearVelocity =
+            c.PrimaryPart.CFrame.LookVector * carspeed
+        end
 
-    local c = findCar()
-
-    if c and c.Config.On.Value == true and c.PrimaryPart and isWDown() then
-c.PrimaryPart.AssemblyLinearVelocity =
-    c.PrimaryPart.CFrame.LookVector * carspeed
+    elseif taxifarm then
+        local c = findCar()
+        c.PrimaryPart.Velocity = Vector3.new(0,0,0)
+        
+        taxiautoo()
     end
 end)
 
@@ -186,11 +233,45 @@ end
 })
 
 Car:AddButton({
-    Title = "Set Clipboard to Car Position",
+    Title = "Set Car Position to Clipboard.",
     Callback = function()
+        local c = findCar()
        setclipboard(c.PrimaryPart.Position)
     end,
 })
+
+local carlaunchvelocity = Car:AddKeybind({
+    Id = "carlaunchvelocity",
+    Title = "Launch Velocity (1-1)",
+    Default = "Mouse5",
+    --Mode = "Hold",
+    Callback = function(state)
+        local car = findCar()
+
+if car and car.PrimaryPart and car.Config.On.Value == true then
+    local velocity = car.PrimaryPart.AssemblyLinearVelocity
+
+    car.PrimaryPart.AssemblyLinearVelocity = Vector3.new(
+        velocity.X,
+        launchvelocity,
+        velocity.Z
+    )
+else
+    
+end
+
+end
+})
+
+local carlaunchvelocity = Car:AddSlider({
+    Id = "carlaunchvelocity",
+    Title = "Launch Velocity (1-1)",
+    Min = 60, Max = 135,
+    Default = 135,
+    Rounding = 0,
+    Callback = function(value, oldValue)
+    launchvelocity = value
+end})
 
 Car:AddButton({
     Title = "Rad Up45",
@@ -201,7 +282,8 @@ if c and c.PrimaryPart then
     local pos = c.PrimaryPart.Position
     c.PrimaryPart.CFrame =
     CFrame.new(pos.X, pos.Y, pos.Z) *
-   	CFrame.Angles(math.rad(45), 0, 0)
+    CFrame.Angles(math.rad(45), 0, 0)
+   	--CFrame.Angles(math.rad(45), pos.Y, pos.Z)
 end
     end,
 })
@@ -238,14 +320,16 @@ local CarTeleport = Car:AddDropdown({
     Id = "cartp",
     Title = "Car Teleport",
     Values = {"Arcade", "Bank", "BlackMarket", "BoatAutoShop", "Cgas", "Dealership", "Delivery", "Farm", "Fish", "Fire", "GunStore", "Hospital", "Nautoshop", "NorthDock", "Nresidential", "NWgas", "OnTopOfArcade", "PawnShop", "Police", "Prison", "Race", "RoadService", "Sautoshop", "SEgas", "Sgas", "Supermarket", "SWgas", "Sresidential", "Transit"},
-    Default = "Dealership",
+    Default = "Arcade",
     Callback = function(value)
     local car = findCar()
     task.wait()
-    if car and car.Config.On.Value == true then
+    if car and car.Config.On.Value == true and started == true then
         carTP(value,car)
-    else
+    elseif car.Config.On.Value == false and started == true then
         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
+    else
+
     end
 end})
 
@@ -299,7 +383,7 @@ local CarBoostSlider = Car:AddSlider({
     Id = "boostspeed",
     Title = "Boost Speed",
     Min = 1, Max = 300,
-    Default = 20,
+    Default = 40,
     Rounding = 0,
     Callback = function(value, oldValue)
     boostspeed = value
@@ -318,7 +402,7 @@ local CarSpeedSlider = Car:AddSlider({
     Id = "carspeedslider",
     Title = "Car Speed",
     Min = 15, Max = 200,
-    Default = 15,
+    Default = 100,
     Rounding = 0,
     Callback = function(value, oldValue)
     carspeed = value
@@ -327,7 +411,7 @@ end})
 local PanicTP = World:AddKeybind({
     Id = "panictp",
     Title = "Panic Teleport",
-    Default = "Z",
+    Default = "Mouse5",
     --Mode = "Hold",
     Callback = function(state)
         pcall(function()
@@ -375,22 +459,24 @@ Job:AddButton({
     end,
 })
 
-local FishFarm = Job:AddToggle({
-    Id = "fishfarm",
-    Title = "Fish Auto Farm",
+local taxifarm = Job:AddToggle({
+    Id = "taxifarm",
+    Title = "Taxi Auto Farm",
     Default = false,
     Keybind = "F1",
 Callback = function(value)
-    
+    taxifarm = value
 end})
 
-
-
-
-
-Window:BuildInterfaceSection(Settings)
-Window:BuildConfigSection(Settings)
-Library:LoadAutoloadConfig()
+local taxifarmslider = Car:AddSlider({
+    Id = "taxifarmslider",
+    Title = "Taxi Auto Farm Teleport CD",
+    Min = 6, Max = 20,
+    Default = 8,
+    Rounding = 0,
+    Callback = function(value, oldValue)
+    taxicooldown = value
+end})
 
 Settings:AddButton({
 	Title = "Unload",
@@ -406,3 +492,16 @@ Settings:AddButton({
 		})
 	end,
 })
+
+Window:BuildInterfaceSection(Settings)
+Window:BuildConfigSection(Settings)
+Library:LoadAutoloadConfig()
+
+Library:Notify({
+    Title = "Loaded!",
+    Content = "Version "..version.." Loaded!",
+    SubContent = "Never execute the script multiple times.\nUnload the UI before executing again.",
+    Duration = 5,
+})
+
+started = true

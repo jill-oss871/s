@@ -10,6 +10,23 @@ local Window = Library:CreateWindow({
     Resize = true,
 })
 
+local gameMods = {
+    "sephriothgatsuga",
+    "hydrofIouric",
+    "yabroigot123",
+    "Marcustraks",
+    "Napoleon_Re",
+    "pr0_b0tz",
+    "exrdoot",
+    "CyraSerenity",
+    "GrootBeretti",
+    "SalvatoreGarf",
+    "dangdaniel1337",
+    "Delorium",
+    "deadlunr",
+    "wf1b"
+}
+
 local Camera = game.Workspace:WaitForChild("Camera")
 
 local Changelogs = Window:AddTab({ Title = "Changelogs", Icon = "clipboard" })
@@ -33,11 +50,13 @@ launchvelocity = 100
 taxicooldown = 8
 espwaittime = 1
 fishpolling = 1
+firerateamount = 0.01
 started = false
 terminate = false
 taxifarm = false
 fishfarm = false
 speedtrapesp = false
+increaseFR = false
 
 local carTPs = {
     Dealership = CFrame.new(3771.96, 0.82, -392.02),
@@ -73,7 +92,7 @@ local carTPs = {
 
 local changelogsmain = Changelogs:AddParagraph({
     Title = "Version 1.36 Changelogs!",
-    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo ~\n..House robbery & yacht robbery auto farming coming soon!",
+    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo, Faster Fire Rate, & More Damage ~\n~ Game moderator detection has been added, text will tell you a mod joined and the UI will be automatically unloaded ~\n..House robbery, ATM robbery, & Yacht robbery auto farming coming soon!",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -506,12 +525,12 @@ task.spawn(function()
         if gun then
             local ammo = gun:FindFirstChild("Config") and gun.Config:FindFirstChild("Ammo")
 
-            if ammo and ammo.Value ~= 100 then
-                ammo.Value = 100
+            if ammo and ammo.Value ~= 200 then
+                ammo.Value = 200
             end
         end
 
-        task.wait(1)
+        task.wait(.5)
     end
 end)
 
@@ -558,6 +577,7 @@ task.spawn(function()
 end)
 
 RunService.RenderStepped:Connect(function()
+    
     if carspeedEnabled then
         local c = findCar()
 
@@ -593,6 +613,27 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
+
+    if started == true then
+
+    for i,v in pairs(game.Players:GetChildren()) do
+        if gameMods[v.Name] then
+            local Warning = Drawing.new("Text")
+            Warning.Text = "A game moderator is in your lobby!\nunloading ui in a few seconds"
+            Warning.Visible = true
+            Warning.Size = 60
+            Warning.Position = Vector2.new(50,300)
+            wait(3)
+            Warning:Remove()
+            Library:Destroy()
+        else
+            continue
+        end
+    end
+
+else
+
+end
 end)
 
 -- Vehicle options
@@ -634,7 +675,6 @@ local carlaunchvelocity = Car:AddKeybind({
 
     end
 end})
-
 
 local carlaunchvelocity = Car:AddSlider({
     Id = "carlaunchvelocity",
@@ -781,7 +821,7 @@ local CarSpeedSlider = Car:AddSlider({
     carspeed = value
 end})
 
-local wp = Items:AddParagraph({ Title = "Infinite Ammo Toggle", Content = "(While Infinite Ammo is enabled, your held weapon will indefinitely be loaded with 100 bullets)", TitleAlignment = "Left", ContentAlignment = "Left" })
+local wp = Items:AddParagraph({ Title = "Infinite Ammo Toggle", Content = "(While Infinite Ammo is enabled, your held weapon will indefinitely be loaded with 200 bullets)\nHold your weapon for Fire Rate modifier as well!\nDon't spam toggles or buttons as usual, your VM will explode emoji", TitleAlignment = "Left", ContentAlignment = "Left" })
 
 local infiniteammo = Items:AddToggle({
     Id = "infiniteammo",
@@ -791,6 +831,99 @@ local infiniteammo = Items:AddToggle({
 Callback = function(value)
     infAmmo = value
 end})
+
+Items:AddButton({
+    Title = "Give your held weapon infinite ammo",
+    Callback = function()
+        local character = Player.Character or Player.CharacterAdded:Wait()
+        local gun = GetGun(character)
+
+        if gun then
+            local ammo = gun:FindFirstChild("Config") and gun.Config:FindFirstChild("Ammo")
+
+            if ammo then
+                ammo.Value *=37
+            end
+        end
+    end,
+})
+
+local wp = Items:AddParagraph({ Title = "Fire Rate & Damage", Content = "Hold weapon and please allow some time for garbage collector to filter\nDo not have fps completely uncapped and do not cap your fps below 60 for best performance\nMatcha should generally always be on Mid usage aswell, if other settings work for you great but this is recommended", TitleAlignment = "Left", ContentAlignment = "Left" })
+
+Items:AddButton({
+    Title = "Increased Damage & Fire Rate",
+    Callback = function()
+        local semi_names = {
+    "semi", "Semi", "SEMI",
+    "semiAuto", "SemiAuto", "semiAUTO", "SemiAUTO",
+    "semi_auto", "Semi_Auto", "SEMI_AUTO",
+    "semi-auto", "Semi-Auto", "SEMI-AUTO",
+    "semi automatic", "Semi Automatic", "SEMI AUTOMATIC",
+    "semi_automatic", "Semi_Automatic", "SEMI_AUTOMATIC",
+    "semi-automatic", "Semi-Automatic", "SEMI-AUTOMATIC",
+    "semiauto", "Semiauto", "SEMIAUTO",
+    "semiautomatic", "Semiautomatic"
+}
+
+local fire_rate_names = {
+    "FireRate", "fireRate", "Firerate", "firerate",
+    "FIRE_RATE", "Fire_Rate", "fire_rate",
+    "FIRE RATE", "Fire Rate", "fire rate",
+    "RPM", "Rpm", "rpm",
+    "RoundsPerMinute", "roundsPerMinute",
+    "RateOfFire", "rateOfFire",
+    "RateOfFireSeconds", "rateOfFireSeconds"
+}
+
+local damage_names = {
+    "Damage",
+    "damage",
+    "DAMAGE",
+    "BaseDamage",
+    "baseDamage",
+    "Base_Damage",
+    "base_damage",
+    "MaxDamage",
+    "maxDamage",
+    "MinDamage",
+    "minDamage",
+    "HeadDamage",
+    "headDamage",
+    "BodyDamage",
+    "bodyDamage",
+    "LimbDamage",
+    "limbDamage"
+}
+
+local names = {}
+
+for _, name in ipairs(semi_names) do
+    table.insert(names, name)
+end
+
+for _, name in ipairs(fire_rate_names) do
+    table.insert(names, name)
+end
+
+for _, name in ipairs(damage_names) do
+    table.insert(names, name)
+end
+
+local cache = getgc(names)
+
+for _, name in ipairs(semi_names) do
+    applygc(cache, name, "Auto")
+end
+
+for _, name in ipairs(fire_rate_names) do
+    applygc(cache, name, 0)
+end
+
+for _, name in ipairs(damage_names) do
+    applygc(cache, name, 50)
+end
+    end,
+})
 
 local PanicTP = World:AddKeybind({
     Id = "panictp",
@@ -928,5 +1061,4 @@ Library:Notify({
     SubContent = "Never execute the script multiple times.\nUnload the UI before executing again.",
     Duration = 5,
 })
-
 started = true

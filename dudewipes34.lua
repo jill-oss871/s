@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.35
+version = 1.36
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -10,10 +10,12 @@ local Window = Library:CreateWindow({
     Resize = true,
 })
 
+local Camera = game.Workspace:WaitForChild("Camera")
 
 local Changelogs = Window:AddTab({ Title = "Changelogs", Icon = "clipboard" })
 local Car = Window:AddTab({ Title = "Car Options", Icon = "car" })
 local World = Window:AddTab({ Title = "World Options", Icon = "globe" })
+local Items = Window:AddTab({ Title = "Item Options", Icon = "hammer" })
 local Job = Window:AddTab({ Title = "Auto Options", Icon = "briefcase" })
 local Settings = Window:AddTab({ Title = "Settings", Icon = "cog" })
 
@@ -29,10 +31,13 @@ local carspeed = 20
 local boostspeed = 20
 launchvelocity = 100
 taxicooldown = 8
+espwaittime = 1
+fishpolling = 1
 started = false
 terminate = false
 taxifarm = false
 fishfarm = false
+speedtrapesp = false
 
 local carTPs = {
     Dealership = CFrame.new(3771.96, 0.82, -392.02),
@@ -67,8 +72,8 @@ local carTPs = {
 }
 
 local changelogsmain = Changelogs:AddParagraph({
-    Title = "Version 1.3 Changelogs!",
-    Content = "~ Vehicle upwards launch button to escape the apparition's extra gravity when low to the ground ~\n~ Taxi Auto Farm with customizable teleport delay depending on lag and how safe you want to be ~\n~ Fish Auto Farm. Keep rod equipped and in slot 1, food in second slot. VERY BUGGY but should be totally automatic ~\n~ Different default settings that are in theory better ~",
+    Title = "Version 1.36 Changelogs!",
+    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo ~\n..House robbery & yacht robbery auto farming coming soon!",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -265,7 +270,7 @@ function moveToArea()
 
     root.CFrame = CFrame.new(area.X, area.Y, area.Z)
 
-    task.wait(1)
+    task.wait(fishpolling)
 
     return not terminate and fishfarm
 end
@@ -283,7 +288,7 @@ function cast()
         return false
     end
 
-    task.wait(1)
+    task.wait(fishpolling)
 
     if terminate or not fishfarm then
         return false
@@ -424,7 +429,7 @@ function startFishFarm()
     fishRunning = true
 
     fishThread = task.spawn(function()
-        task.wait(1)
+        task.wait(fishpolling)
 
         while fishfarm and not terminate do
             if not cast() then
@@ -432,7 +437,7 @@ function startFishFarm()
             end
 
             if not waitForMinigame() then
-                task.wait(1)
+                task.wait(fishpolling)
                 continue
             end
 
@@ -443,9 +448,9 @@ function startFishFarm()
             end
 
             if caught then
-                task.wait(1.5)
+                task.wait(fishpolling*1.5)
             else
-                task.wait(1)
+                task.wait(fishpolling)
             end
 
             if not fishfarm or terminate then
@@ -480,6 +485,78 @@ Library:Notify({
         end
 end
 
+-- thanks to FarmerWest & Mojo for this gun method
+infAmmo = false
+
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local function GetGun(character)
+    for _, obj in ipairs(character:GetChildren()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Config") then
+            return obj
+        end
+    end
+end
+
+task.spawn(function()
+    while infAmmo == true do
+        local character = Player.Character or Player.CharacterAdded:Wait()
+        local gun = GetGun(character)
+
+        if gun then
+            local ammo = gun:FindFirstChild("Config") and gun.Config:FindFirstChild("Ammo")
+
+            if ammo and ammo.Value ~= 100 then
+                ammo.Value = 100
+            end
+        end
+
+        task.wait(1)
+    end
+end)
+
+local speedtrapBoxes = {}
+task.spawn(function()
+    while true do
+        if speedtrapesp then
+            local current = {}
+
+            for _, v in pairs(game.Workspace.World.Interactive:GetChildren()) do
+                local area = v:FindFirstChild("_SpeedCameraArea")
+
+                if area and area:IsA("BasePart") then
+                    current[area] = true
+
+                    if not speedtrapBoxes[area] then
+                        local box = Drawing.new("Square")
+                        box.Color = Color3.fromRGB(255, 200, 0)
+                        box.Thickness = 1
+                        box.Filled = false
+                        box.Transparency = 0.25
+                        box.Size = Vector2.new(80, 80)
+                        box.Visible = false
+
+                        speedtrapBoxes[area] = box
+                    end
+                end
+            end
+
+            for area, box in pairs(speedtrapBoxes) do
+                if not current[area] then
+                    box:Remove()
+                    speedtrapBoxes[area] = nil
+                end
+            end
+        else
+            for _, box in pairs(speedtrapBoxes) do
+                box.Visible = false
+            end
+        end
+
+        task.wait(espwaittime)
+    end
+end)
+
 RunService.RenderStepped:Connect(function()
     if carspeedEnabled then
         local c = findCar()
@@ -488,8 +565,9 @@ RunService.RenderStepped:Connect(function()
             c.PrimaryPart.AssemblyLinearVelocity =
                 c.PrimaryPart.CFrame.LookVector * carspeed
         end
+    end
 
-    elseif taxifarm then
+    if taxifarm then
         local c = findCar()
 
         if c and c.PrimaryPart then
@@ -497,6 +575,23 @@ RunService.RenderStepped:Connect(function()
         end
 
         taxiautoo()
+    end
+
+    if speedtrapesp then
+        for area, box in pairs(speedtrapBoxes) do
+            if area.Parent then
+                local pos, onScreen = WorldToScreen(area.Position)
+
+                if onScreen then
+                    box.Position = Vector2.new(pos.X - 40, pos.Y - 40)
+                    box.Visible = true
+                else
+                    box.Visible = false
+                end
+            else
+                box.Visible = false
+            end
+        end
     end
 end)
 
@@ -530,22 +625,16 @@ local carlaunchvelocity = Car:AddKeybind({
     Default = "Mouse5",
     --Mode = "Hold",
     Callback = function(state)
-        local car = findCar()
+    local car = findCar()
 
-if car and car.PrimaryPart and car.Config.On.Value == true then
+    if car and car.PrimaryPart and car.Config.On.Value == true then
     local velocity = car.PrimaryPart.AssemblyLinearVelocity
+    car.PrimaryPart.AssemblyLinearVelocity = Vector3.new(velocity.X, launchvelocity, velocity.Z)
+    else
 
-    car.PrimaryPart.AssemblyLinearVelocity = Vector3.new(
-        velocity.X,
-        launchvelocity,
-        velocity.Z
-    )
-else
-    
-end
+    end
+end})
 
-end
-})
 
 local carlaunchvelocity = Car:AddSlider({
     Id = "carlaunchvelocity",
@@ -692,6 +781,17 @@ local CarSpeedSlider = Car:AddSlider({
     carspeed = value
 end})
 
+local wp = Items:AddParagraph({ Title = "Infinite Ammo Toggle", Content = "(While Infinite Ammo is enabled, your held weapon will indefinitely be loaded with 100 bullets)", TitleAlignment = "Left", ContentAlignment = "Left" })
+
+local infiniteammo = Items:AddToggle({
+    Id = "infiniteammo",
+    Title = "Infinite Ammo",
+    Default = false,
+    Keybind = "F1",
+Callback = function(value)
+    infAmmo = value
+end})
+
 local PanicTP = World:AddKeybind({
     Id = "panictp",
     Title = "Panic Teleport",
@@ -711,6 +811,25 @@ local PanicTP = World:AddKeybind({
     end)
 end
 })
+
+local speedtraptoggle = World:AddToggle({
+    Id = "speedtrapt",
+    Title = "Speed Trap ESP",
+    Default = false,
+    Keybind = "F1",
+Callback = function(value)
+    speedtrapesp = value
+end})
+
+local espwaitslider = World:AddSlider({
+    Id = "espwaitslider",
+    Title = "ESP Polling Rate (5 = 0.5s)",
+    Min = 1, Max = 50,
+    Default = 10,
+    Rounding = 0,
+    Callback = function(value, oldValue)
+    espwaittime = value/10
+end})
 
 local p = Job:AddParagraph({ Title = "⚠️~ All of this is under development and experimental ~⚠️", Content = "Don't use what isn't confirmed to be working", TitleAlignment = "Left", ContentAlignment = "Left" })
 local p = Job:AddParagraph({ Title = "Terminate any active auto farms.", Content = "Do not spam!\nWait >10 seconds to start another farm.", TitleAlignment = "Left", ContentAlignment = "Left" })
@@ -734,7 +853,7 @@ Job:AddButton({
 })
 
 Job:AddButton({
-    Title = "Finish Bus Route!",
+    Title = "Finish Bus Route! [RISKY]",
     Callback = function()
         local car = findCar()
         finishBusRoute(car)
@@ -743,7 +862,7 @@ Job:AddButton({
 
 local taxifarm = Job:AddToggle({
     Id = "taxifarm",
-    Title = "Taxi Auto Farm",
+    Title = "Taxi Auto Farm [RISKY]",
     Default = false,
     Keybind = "F1",
 Callback = function(value)
@@ -752,9 +871,9 @@ end})
 
 local taxifarmslider = Job:AddSlider({
     Id = "taxifarmslider",
-    Title = "Taxi Auto Farm Teleport CD",
+    Title = "Taxi Auto Farm Teleport CD [KEEP HIGH]",
     Min = 6, Max = 60,
-    Default = 20,
+    Default = 15,
     Rounding = 0,
     Callback = function(value, oldValue)
     taxicooldown = value
@@ -762,7 +881,7 @@ end})
 
 local fishfarmtoggle = Job:AddToggle({
     Id = "fishfarmtoggle",
-    Title = "Fish Auto Farm",
+    Title = "Fish Auto Farm (Undetected but Slow)",
     Default = false,
     Keybind = "F1",
     Callback = function(value)
@@ -773,6 +892,16 @@ local fishfarmtoggle = Job:AddToggle({
         end
     end
 })
+
+local fishfarmslider = Job:AddSlider({
+    Id = "fishfarmslider",
+    Title = "Fish Auto Farm Polling (The Higher the More UD, default is fine)",
+    Min = 1, Max = 10,
+    Default = 1,
+    Rounding = 0,
+    Callback = function(value, oldValue)
+    fishpolling = value
+end})
 
 Settings:AddButton({
 	Title = "Unload",

@@ -52,6 +52,7 @@ espwaittime = 1
 fishpolling = 1
 firerateamount = 0.01
 started = false
+doubleclick = false
 terminate = false
 taxifarm = false
 fishfarm = false
@@ -534,6 +535,12 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    while doubleclick == true do
+        
+    end
+end)
+
 local speedtrapBoxes = {}
 task.spawn(function()
     while true do
@@ -739,7 +746,7 @@ local CarTeleport = Car:AddDropdown({
     task.wait()
     if car and car.Config.On.Value == true and started == true then
         carTP(value,car)
-    elseif not car and started == true then
+    elseif car and car.Config.On.Value == false and started == true then
         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
     else
 
@@ -924,6 +931,15 @@ for _, name in ipairs(damage_names) do
 end
     end,
 })
+
+local doubleclicktoggle = Items:AddToggle({
+    Id = "doubleclicktoggle",
+    Title = "Double Click",
+    Default = false,
+    Keybind = "F1",
+Callback = function(value)
+    doubleclick = value
+end})
 
 local PanicTP = World:AddKeybind({
     Id = "panictp",

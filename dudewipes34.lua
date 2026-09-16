@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.36
+version = 1.37
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -92,8 +92,8 @@ local carTPs = {
 }
 
 local changelogsmain = Changelogs:AddParagraph({
-    Title = "Version 1.36 Changelogs!",
-    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo, Faster Fire Rate, & More Damage ~\n~ Game moderator detection has been added, text will tell you a mod joined and the UI will be automatically unloaded ~\n..House robbery, ATM robbery, & Yacht robbery auto farming coming soon!",
+    Title = "Version 1.37 Changelogs!",
+    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo, Faster Fire Rate, More Damage, & No Recoil ~\n~ Game moderator detection has been added, text will tell you a mod joined and the UI will be automatically unloaded ~\n..House robbery, ATM robbery, & Yacht robbery auto farming coming soon!",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -535,12 +535,6 @@ task.spawn(function()
     end
 end)
 
-task.spawn(function()
-    while doubleclick == true do
-        
-    end
-end)
-
 local speedtrapBoxes = {}
 task.spawn(function()
     while true do
@@ -855,22 +849,59 @@ Items:AddButton({
     end,
 })
 
-local wp = Items:AddParagraph({ Title = "Fire Rate & Damage", Content = "Hold weapon and please allow some time for garbage collector to filter\nDo not have fps completely uncapped and do not cap your fps below 60 for best performance\nMatcha should generally always be on Mid usage aswell, if other settings work for you great but this is recommended", TitleAlignment = "Left", ContentAlignment = "Left" })
+local wp = Items:AddParagraph({ Title = "Fire Rate, Extra Damage, & No Recoil", Content = "Hold weapon and please allow some time for garbage collector to filter\nDo not have fps completely uncapped and do not cap your fps below 60 for best performance\nMatcha should generally always be on Mid usage aswell, if other settings work for you great but this is recommended", TitleAlignment = "Left", ContentAlignment = "Left" })
 
 Items:AddButton({
-    Title = "Increased Damage & Fire Rate",
+    Title = "Increased Damage & Fire Rate & No Recoil",
     Callback = function()
-        local semi_names = {
-    "semi", "Semi", "SEMI",
-    "semiAuto", "SemiAuto", "semiAUTO", "SemiAUTO",
-    "semi_auto", "Semi_Auto", "SEMI_AUTO",
-    "semi-auto", "Semi-Auto", "SEMI-AUTO",
-    "semi automatic", "Semi Automatic", "SEMI AUTOMATIC",
-    "semi_automatic", "Semi_Automatic", "SEMI_AUTOMATIC",
-    "semi-automatic", "Semi-Automatic", "SEMI-AUTOMATIC",
-    "semiauto", "Semiauto", "SEMIAUTO",
-    "semiautomatic", "Semiautomatic"
+local recoil_names = {
+    "Recoil",
+    "recoil",
+    "RECOIL",
+    "RecoilAmount",
+    "recoilAmount",
+    "Recoil_Amount",
+    "recoil_amount",
+    "RecoilAmountX",
+    "RecoilAmountY",
+    "RecoilX",
+    "RecoilY",
+    "recoilX",
+    "recoilY",
+    "VerticalRecoil",
+    "verticalRecoil",
+    "HorizontalRecoil",
+    "horizontalRecoil",
+    "CameraRecoil",
+    "cameraRecoil",
+    "GunRecoil",
+    "gunRecoil",
+    "WeaponRecoil",
+    "weaponRecoil",
+    "Kickback",
+    "kickback",
+    "GunKick",
+    "gunKick",
+    "WeaponKick",
+    "weaponKick",
+    "ViewKick",
+    "viewKick",
+    "CameraKick",
+    "cameraKick",
+    "AimRecoil",
+    "aimRecoil",
+    "RecoilPattern",
+    "recoilPattern",
+    "RecoilStrength",
+    "recoilStrength",
+    "RecoilIntensity",
+    "recoilIntensity",
+    "RecoilForce",
+    "recoilForce",
+    "RecoilPower",
+    "recoilPower"
 }
+
 
 local fire_rate_names = {
     "FireRate", "fireRate", "Firerate", "firerate",
@@ -904,7 +935,7 @@ local damage_names = {
 
 local names = {}
 
-for _, name in ipairs(semi_names) do
+for _, name in ipairs(recoil_names) do
     table.insert(names, name)
 end
 
@@ -918,8 +949,8 @@ end
 
 local cache = getgc(names)
 
-for _, name in ipairs(semi_names) do
-    applygc(cache, name, "Auto")
+for _, name in ipairs(recoil_names) do
+    applygc(cache, name, 0)
 end
 
 for _, name in ipairs(fire_rate_names) do
@@ -931,15 +962,6 @@ for _, name in ipairs(damage_names) do
 end
     end,
 })
-
-local doubleclicktoggle = Items:AddToggle({
-    Id = "doubleclicktoggle",
-    Title = "Double Click",
-    Default = false,
-    Keybind = "F1",
-Callback = function(value)
-    doubleclick = value
-end})
 
 local PanicTP = World:AddKeybind({
     Id = "panictp",

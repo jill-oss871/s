@@ -97,7 +97,7 @@ local carTPs = {
 
 local changelogsmain = Changelogs:AddParagraph({
     Title = "Version 1.38 Changelogs!",
-    Content = "~ No Recoil, Fast Fire Rate, & Infinite Ammo ~\n~ Hide under the map with a toggle ~\n~ More Car Options ~",
+    Content = "~ No Recoil, Fast Fire Rate, & Infinite Ammo ~\n~ Hide under the map with a toggle ~\n~ Higher Max Car Speed~",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -126,12 +126,7 @@ function carTP(Location,car)
         car.PrimaryPart.CFrame = carTPs[Location]
         car.PrimaryPart.Velocity = Vector3.new(0,0,0)
     else
-Library:Notify({
-    Title = "Error",
-    Content = "No Car to teleport",
-    SubContent = "Get in a car to use this feature.",
-    Duration = 4,
-})
+
     end
 end
 
@@ -641,37 +636,6 @@ else
 end
 end)
 
-local hbConnection
-local frozenCFrame
-local function Freeze()
-    if hbConnection then
-        return
-    end
-    local character = game.Players.LocalPlayer.Character
-    local r = character and character:FindFirstChild("HumanoidRootPart")
-    if not r then
-        return
-    end
-    frozenCFrame = r.CFrame
-
-    hbConnection = RunService.Heartbeat:Connect(function()
-        if r and r.Parent then
-            r.CFrame = frozenCFrame
-            r.AssemblyLinearVelocity = Vector3.zero
-            r.Velocity = Vector3.zero
-        end
-    end)
-end
-
-local function unFreeze()
-    if hbConnection then
-        hbConnection:Disconnect()
-        hbConnection = nil
-    end
-
-    frozenCFrame = nil
-end
-
 local noVelocity = Car:AddKeybind({
     Id = "novelocity",
     Title = "Terminate Car Velocity",
@@ -721,6 +685,36 @@ local carlaunchvelocity = Car:AddSlider({
 end})
 
 Car:AddButton({
+    Title = "Remove Car Top Speed",
+    Callback = function()
+        local speed_names = {
+    "MaxSpeed",
+    "maxSpeed",
+    "MAXSPEED",
+    "MAX_SPEED",
+    "Max_Speed",
+    "max_speed",
+    "MaximumSpeed",
+    "maximumSpeed",
+    "MAXIMUMSPEED",
+    "MAXIMUM_SPEED",
+    "Maximum_Speed",
+    "maximum_speed",
+}
+local names = {}
+
+for _, name in ipairs(speed_names) do
+    table.insert(names, name)
+end
+local cache = getgc(names)
+
+for _, name in ipairs(speed_names) do
+    applygc(cache, name, 200)
+end
+    end,
+})
+
+Car:AddButton({
     Title = "Rad Up45",
     Callback = function()
         local c = findCar()
@@ -729,8 +723,7 @@ if c and c.PrimaryPart then
     local pos = c.PrimaryPart.Position
     c.PrimaryPart.CFrame =
     CFrame.new(pos.X, pos.Y, pos.Z) *
-    --CFrame.Angles(math.rad(45), 0, 0)
-   	CFrame.Angles(math.rad(45), pos.Y, pos.Z)
+   	CFrame.Angles(math.rad(45), 0, 0)
 end
     end,
 })
@@ -788,6 +781,8 @@ local CarTeleport = Car:AddDropdown({
     if car and car.Config.On.Value == true and started == true then
         carTP(value,car)
     elseif car and car.Config.On.Value == false and started == true then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
+    elseif not car and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = carTPs[value]
     else
 
@@ -867,24 +862,6 @@ local CarSpeedSlider = Car:AddSlider({
     Rounding = 0,
     Callback = function(value, oldValue)
     carspeed = value
-end})
-
-local HideToggle = PlayerT:AddToggle({
-    Id = "HideToggle",
-    Title = "Hide Under The Map!",
-    Default = false,
-    Keybind = "F1",
-Callback = function(value)
-    if started == true and value == true then
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3366.70, -60, 437.38)
-        Freeze()
-    elseif started == true and value == false then
-        unFreeze()
-        wait(.5)
-        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3366.70, 281.13, 437.38)
-    else
-        unFreeze()
-    end
 end})
 
 local wp = Items:AddParagraph({ Title = "Infinite Ammo Toggle", Content = "(While Infinite Ammo is enabled, your held weapon will indefinitely be loaded with 200 bullets)\nHold your weapon for Fire Rate modifier as well!\nDon't spam toggles or buttons as usual, your VM will explode emoji", TitleAlignment = "Left", ContentAlignment = "Left" })

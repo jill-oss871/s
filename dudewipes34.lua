@@ -1,7 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
-version = 1.37
+version = 1.38
 
 local Window = Library:CreateWindow({
     Title = "San Aurie | v"..tostring(version),
@@ -31,9 +31,11 @@ local Camera = game.Workspace:WaitForChild("Camera")
 
 local Changelogs = Window:AddTab({ Title = "Changelogs", Icon = "clipboard" })
 local Car = Window:AddTab({ Title = "Car Options", Icon = "car" })
+local PlayerT = Window:AddTab({ Title = "Player Options", Icon = "user" })
 local World = Window:AddTab({ Title = "World Options", Icon = "globe" })
 local Items = Window:AddTab({ Title = "Item Options", Icon = "hammer" })
 local Job = Window:AddTab({ Title = "Auto Options", Icon = "briefcase" })
+local Premium = Window:AddTab({ Title = "Premium Options", Icon = "crown" })
 local Settings = Window:AddTab({ Title = "Settings", Icon = "cog" })
 
 local Players = game:GetService("Players")
@@ -88,12 +90,14 @@ local carTPs = {
     SWgas = CFrame.new(1152.28, 0.84, -844.14),
     Sresidential = CFrame.new(-466.75, 1.04, 1319.56),
     Nresidential = CFrame.new(3688.47, 98.77, 1909.96),
-    OnTopOfArcade = CFrame.new(2991.03, 79.31, 1726.07)
+    OnTopOfArcade = CFrame.new(2991.03, 79.31, 1726.07),
+    Skyscraper = CFrame.new(3366.70, 281.13, 437.38)
+
 }
 
 local changelogsmain = Changelogs:AddParagraph({
-    Title = "Version 1.37 Changelogs!",
-    Content = "~ Reveal speed trap hitboxes ~\n~ More Sliders to help with anti cheat detection ~\n~ Weapon and item options including Infinite Ammo, Faster Fire Rate, More Damage, & No Recoil ~\n~ Game moderator detection has been added, text will tell you a mod joined and the UI will be automatically unloaded ~\n..House robbery, ATM robbery, & Yacht robbery auto farming coming soon!",
+    Title = "Version 1.38 Changelogs!",
+    Content = "~ No Recoil, Fast Fire Rate, & Infinite Ammo ~\n~ Hide under the map with a toggle ~\n~ More Car Options ~",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
@@ -637,7 +641,36 @@ else
 end
 end)
 
--- Vehicle options
+local hbConnection
+local frozenCFrame
+local function Freeze()
+    if hbConnection then
+        return
+    end
+    local character = game.Players.LocalPlayer.Character
+    local r = character and character:FindFirstChild("HumanoidRootPart")
+    if not r then
+        return
+    end
+    frozenCFrame = r.CFrame
+
+    hbConnection = RunService.Heartbeat:Connect(function()
+        if r and r.Parent then
+            r.CFrame = frozenCFrame
+            r.AssemblyLinearVelocity = Vector3.zero
+            r.Velocity = Vector3.zero
+        end
+    end)
+end
+
+local function unFreeze()
+    if hbConnection then
+        hbConnection:Disconnect()
+        hbConnection = nil
+    end
+
+    frozenCFrame = nil
+end
 
 local noVelocity = Car:AddKeybind({
     Id = "novelocity",
@@ -657,7 +690,7 @@ Car:AddButton({
     Title = "Set Car Position to Clipboard.",
     Callback = function()
         local c = findCar()
-       setclipboard(c.PrimaryPart.Position)
+       setclipboard(tostring(c.PrimaryPart.Position))
     end,
 })
 
@@ -730,10 +763,24 @@ end
     end,
 })
 
+Car:AddButton({
+    Title = "Rad Upright",
+    Callback = function()
+        local c = findCar()
+
+if c and c.PrimaryPart then
+    local pos = c.PrimaryPart.Position
+    c.PrimaryPart.CFrame =
+    CFrame.new(pos.X, pos.Y, pos.Z) *
+   	CFrame.Angles(0, 0, 0)
+end
+    end,
+})
+
 local CarTeleport = Car:AddDropdown({
     Id = "cartp",
     Title = "Car Teleport",
-    Values = {"Arcade", "Bank", "BlackMarket", "BoatAutoShop", "Cgas", "Dealership", "Delivery", "Farm", "Fish", "Fire", "GunStore", "Hospital", "Nautoshop", "NorthDock", "Nresidential", "NWgas", "OnTopOfArcade", "PawnShop", "Police", "Prison", "Race", "RoadService", "Sautoshop", "SEgas", "Sgas", "Supermarket", "SWgas", "Sresidential", "Transit"},
+    Values = {"Arcade", "Bank", "BlackMarket", "BoatAutoShop", "Cgas", "Dealership", "Delivery", "Farm", "Fish", "Fire", "GunStore", "Hospital", "Nautoshop", "NorthDock", "Nresidential", "NWgas", "OnTopOfArcade", "PawnShop", "Police", "Prison", "Race", "RoadService", "Sautoshop", "SEgas", "Sgas", "Skyscraper", "Supermarket", "SWgas", "Sresidential", "Transit"},
     Default = "Arcade",
     Callback = function(value)
     local car = findCar()
@@ -822,6 +869,24 @@ local CarSpeedSlider = Car:AddSlider({
     carspeed = value
 end})
 
+local HideToggle = PlayerT:AddToggle({
+    Id = "HideToggle",
+    Title = "Hide Under The Map!",
+    Default = false,
+    Keybind = "F1",
+Callback = function(value)
+    if started == true and value == true then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3366.70, -60, 437.38)
+        Freeze()
+    elseif started == true and value == false then
+        unFreeze()
+        wait(.5)
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3366.70, 281.13, 437.38)
+    else
+        unFreeze()
+    end
+end})
+
 local wp = Items:AddParagraph({ Title = "Infinite Ammo Toggle", Content = "(While Infinite Ammo is enabled, your held weapon will indefinitely be loaded with 200 bullets)\nHold your weapon for Fire Rate modifier as well!\nDon't spam toggles or buttons as usual, your VM will explode emoji", TitleAlignment = "Left", ContentAlignment = "Left" })
 
 local infiniteammo = Items:AddToggle({
@@ -843,7 +908,7 @@ Items:AddButton({
             local ammo = gun:FindFirstChild("Config") and gun.Config:FindFirstChild("Ammo")
 
             if ammo then
-                ammo.Value *=37
+                ammo.Value = 9999
             end
         end
     end,
@@ -958,10 +1023,13 @@ for _, name in ipairs(fire_rate_names) do
 end
 
 for _, name in ipairs(damage_names) do
-    applygc(cache, name, 50)
+    applygc(cache, name, 300)
 end
     end,
 })
+
+local poparagra = Premium:AddParagraph({ Title = "Premium Content", Content = "Premium content is only available to certain users, sorry!", TitleAlignment = "Left", ContentAlignment = "Left" })
+
 
 local PanicTP = World:AddKeybind({
     Id = "panictp",
@@ -1002,7 +1070,7 @@ local espwaitslider = World:AddSlider({
     espwaittime = value/10
 end})
 
-local p = Job:AddParagraph({ Title = "⚠️~ All of this is under development and experimental ~⚠️", Content = "Don't use what isn't confirmed to be working", TitleAlignment = "Left", ContentAlignment = "Left" })
+local p = Job:AddParagraph({ Title = "! ~ All of this is under development and experimental ~ !", Content = "Don't use what isn't confirmed to be working", TitleAlignment = "Left", ContentAlignment = "Left" })
 local p = Job:AddParagraph({ Title = "Terminate any active auto farms.", Content = "Do not spam!\nWait >10 seconds to start another farm.", TitleAlignment = "Left", ContentAlignment = "Left" })
 Job:AddButton({
     Title = "Terminate Active Autos",

@@ -1,6 +1,7 @@
 loadstring(game:HttpGet("https://scripts.wabisabi.mom/wabi-sabi-ui-lib.lua"))()
 local Library = WabiSabi
 
+
 version = 1.38
 
 local Window = Library:CreateWindow({
@@ -97,7 +98,7 @@ local carTPs = {
 
 local changelogsmain = Changelogs:AddParagraph({
     Title = "Version 1.38 Changelogs!",
-    Content = "~ No Recoil, Fast Fire Rate, & Infinite Ammo ~\n~ Hide under the map with a toggle ~\n~ Higher Max Car Speed~",
+    Content = "~ No Recoil, Fast Fire Rate, & Infinite Ammo ~\n~ Higher Max Car Speed~",
     TitleAlignment = "Left",
     ContentAlignment = "Left"
 })
